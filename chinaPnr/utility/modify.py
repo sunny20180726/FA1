@@ -39,7 +39,6 @@ def makeup_num_miss(p_df, p_var_list, p_method):
     print("function makeup_miss_for_num finished!...................")
 
 
-
 def makeup_num_miss_for_1(p_df, p_var, p_method):
     """
     按照指定的方法对数据集的指定列数字类型数据进行填充

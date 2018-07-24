@@ -7,12 +7,18 @@
 # get_list_for_number_str_col 将dataframe中的字段名称分为字符型、数值型两个list返回
 # num_var_perf    探索数值型变量的分布
 # str_var_pref    探索字符型变量的分布
-# time_window_selection   根据给定的时间窗口 进行累计计数 并返回
+# time_window_selection   根据给定的时间窗口 进行累计计数 保存图像 并返回结果
+# missing_categorial_for_1 为某一个类别型变量统计缺失值
+# missing_continuous_for_1 为某一个数值型变量统计缺失值 返回缺失率
+# missing_categorial 为df中所有类别型变量统计缺失值
+# missing_continuous 为df中所有连续型变量统计缺失值
+# max_bin_pcnt 计算各个类别的占比 返回series
 
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot
 import chinaPnr.utility.others as u_others
+import numbers
 
 
 def get_list_for_number_str_col(p_df, p_col_id, p_col_target):
@@ -32,7 +38,8 @@ def get_list_for_number_str_col(p_df, p_col_id, p_col_target):
 
     str_var_list = name_of_col.copy()
     for varName in name_of_col:
-        if p_df[varName].dtypes in (np.int, np.int64, np.uint, np.int32, np.float, np.float64, np.float32, np.double):
+        if p_df[varName].dtypes in (np.int, np.int64, np.uint, np.int32, np.float, np.float64, np.float32, np.double,
+                                    numbers.Real):
             str_var_list.remove(varName)
             num_var_list.append(varName)
     print("function get_list_for_number_str_col finished!...................")
@@ -151,22 +158,32 @@ def str_var_pref(p_df, p_var_list, p_target_var, p_path):
     print("function str_var_pref finished!...................")
 
 
-def time_window_selection(p_df, p_daysCol, p_time_windows):
+def time_window_selection(p_df, p_days_col, p_time_windows, p_save_file):
     """
-    根据给定的时间窗口 进行累计计数 并返回
+    根据给定的时间窗口 进行累计计数 保存图像 并返回结果
     :param p_df: 数据集
-    :param p_daysCol: 天数所在的列
+    :param p_days_col: 天数所在的列
     :param p_time_windows: 时间窗口 为list 如[10,20,30]
+    :param p_save_file: 保存文件全文件名
     :return:
     """
-
-    freq_tw = {}
+    total = p_df.shape[0]
+    freq_pd = pd.DataFrame({"days": [0], "pcnt": [0.0]})
     for tw in p_time_windows:
-        freq = sum(p_df[p_daysCol].apply(lambda x: int(x <= tw)))
-        freq_tw[tw] = freq
+        freq = sum(p_df[p_days_col].apply(lambda x: int(x <= tw)))
+        freq_pd = freq_pd.append({"days": tw, "pcnt": freq * 100.0 / total}, ignore_index=True)
+    # 画图
+    fig = pyplot.figure()
+    pyplot.grid()
+    ax = fig.add_subplot(111)
+    ax.set_yticks(range(0, 100, 5))
+    ax.set_ylabel("percent %")
+    ax.plot(freq_pd["days"], freq_pd["pcnt"], "ro-")
+    pyplot.savefig(p_save_file)
+    pyplot.close(1)
 
     print("function time_window_selection finished!...................")
-    return freq_tw
+    return freq_pd
 
 
 def missing_categorial_for_1(p_df, p_var):
@@ -174,7 +191,7 @@ def missing_categorial_for_1(p_df, p_var):
     为某一个类别型变量统计缺失值
     :param p_df:
     :param p_var:
-    :return:
+    :return: 返回缺失率
     """
     missing_vals = p_df[p_var].map(lambda x: int(x != x))
     print("function missing_categorial_for_1 finished!...................")
@@ -183,7 +200,7 @@ def missing_categorial_for_1(p_df, p_var):
 
 def missing_continuous_for_1(p_df, p_var):
     """
-    为某一个数值型变量统计缺失值
+    为某一个数值型变量统计缺失值 返回缺失率
     :param p_df:
     :param p_var:
     :return:
@@ -207,7 +224,11 @@ def missing_categorial(p_df, p_var_list, p_file=""):
 
     if len(p_file.strip()) > 0:
         f = open(p_file, 'w')
-        f.write(str(dict_mis))
+        for key, value in dict_mis.items():
+            f.write(key+","+str(value))
+            f.write('\n')
+        # f.write(str(dict_mis))
+        # f.write('\n')
         f.close()
 
     print("function missing_categorial finished!...................")
@@ -228,7 +249,10 @@ def missing_continuous(p_df, p_var_list, p_file=""):
 
     if len(p_file.strip()) > 0:
         f = open(p_file, 'w')
-        f.write(str(dict_mis))
+        for key, value in dict_mis.items():
+            f.write(key+","+str(value))
+            f.write('\n')
+        # f.write(str(dict_mis))
         f.close()
 
     print("function missing_continuous finished!...................")
@@ -237,10 +261,10 @@ def missing_continuous(p_df, p_var_list, p_file=""):
 
 def max_bin_pcnt(p_df, col):
     """
-    计算各个类别的占比
+    计算各个类别的占比 返回series
     :param p_df:
     :param col:
-    :return:
+    :return: 返回series
     """
     n = p_df.shape[0]
     total = p_df.groupby([col])[col].count()
