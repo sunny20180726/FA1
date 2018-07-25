@@ -1,17 +1,20 @@
-from __future__ import division
-from numpy.random import randn
-import numpy as np
-import os
-import matplotlib.pyplot as plt
-
-from pandas import Series, DataFrame
-import pandas as pd
 import random
-from matplotlib import pyplot
-from matplotlib.ticker import MultipleLocator
+
+allData.shape
+
+random.random
+a = []
+for i in range(0,30000):
+    a.append(random.randint(0,365))
+b = {"ListingGap":a,
+     "Idx":allData["Idx"]}
+
+bb = pd.DataFrame(b)
 
 
-a = [1,2,3,4,5,6]
-b = [1,2,3]
-for var in b:
-    a.remove(var)
+result = pd.merge(allData,bb,on="Idx")
+result.to_csv('allData_00.csv',encoding = 'gbk')
+
+
+allData11 = pd.read_csv('allData_00.csv', header=0, encoding='gbk')
+allData11["ListingGap"]

@@ -12,6 +12,7 @@
 import random
 import numpy as np
 import pandas as pd
+import chinaPnr.utility.explore as u_explore
 
 
 def makeup_num_miss(p_df, p_var_list, p_method):
@@ -172,6 +173,45 @@ def density_encoder(p_df, p_str_list, p_target):
         p_df[var] = density_encoder_for_1(p_df, var, p_target)
     print("function density_encoder finished!...................")
 
+
+def drop_str_missing_over_pcnt(p_df, p_str_var_list, p_threshould=0.5):
+    """
+    删除缺失率超过阈值的字符型变量 默认阈值0.5
+    :param p_df:
+    :param p_str_var_list:
+    :param p_threshould:
+    :return:
+    """
+    for col in p_str_var_list:
+        missing_rate = u_explore.missing_categorial_for_1(p_df, col)
+        print('{0} has missing rate as {1}'.format(col, missing_rate))
+        if missing_rate > p_threshould:
+            p_str_var_list.remove(col)
+            del p_df[col]
+        if 0 < missing_rate < p_threshould:
+            # In this way we convert NaN to NAN, which is a string instead of np.nan
+            p_df[col] = p_df[col].map(lambda x: str(x).upper())
+    print("function drop_str_missing_over_pcnt finished!...................")
+
+
+def drop_num_missing_over_pcnt(p_df, p_num_var_list, p_threshould=0.3):
+    """
+    删除缺失率超过阈值的连续型变量 默认阈值0.3
+    :param p_df:
+    :param p_num_var_list:
+    :param p_threshould:
+    :return:
+    """
+    # p_df=allData
+    # p_num_var_list = number_var_list
+    # p_threshould=0.3
+    for col in p_num_var_list:
+        missing_rate = u_explore.missing_continuous_for_1(p_df, col)
+        print('{0} has missing rate as {1}'.format(col, missing_rate))
+        if missing_rate > p_threshould:
+            del p_df[col]
+            print('we delete variable {} because of its high missing rate'.format(col))
+    print("function drop_num_missing_over_pcnt finished!...................")
 
 def standard_max_min(p_df, p_var, p_target):
     """

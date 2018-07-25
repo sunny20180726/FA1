@@ -18,32 +18,43 @@ import numpy as np
 import pandas as pd
 from matplotlib import pyplot
 import chinaPnr.utility.others as u_others
-import numbers
 
 
-def get_list_for_number_str_col(p_df, p_col_id, p_col_target):
+def get_list_for_number_str_col(p_df, p_col_id, p_col_target, p_drop_col=[] ):
     """
-    将dataframe中的字段名称分为数值型、字符型两个list返回
+    将dataframe中的字段名称分为数值型、字符型、全部三个list返回
     :param p_df: 数据集
     :param p_col_id: 主键字段名
     :param p_col_target: 目标字段名
     :return:str_var_list: 字符型变量列表；numberVarlist- 数值型变量列表
     """
+    # p_df=allData
+    # p_col_id=col_id
+    # p_col_target=col_target
+    # p_drop_col=drop_var
 
     name_of_col = list(p_df.columns)
     name_of_col.remove(p_col_target)
     name_of_col.remove(p_col_id)
     num_var_list = []
     str_var_list = []
+    all_var_list = []
 
     str_var_list = name_of_col.copy()
-    for varName in name_of_col:
-        if p_df[varName].dtypes in (np.int, np.int64, np.uint, np.int32, np.float, np.float64, np.float32, np.double,
-                                    numbers.Real):
-            str_var_list.remove(varName)
-            num_var_list.append(varName)
+    for var in name_of_col:
+        if p_df[var].dtypes in (np.int, np.int64, np.uint, np.int32, np.float, np.float64, np.float32, np.double):
+            str_var_list.remove(var)
+            num_var_list.append(var)
+    for var in p_drop_col:
+        if var in str_var_list:
+            str_var_list.remove(var)
+        if var in num_var_list:
+            num_var_list.remove(var)
+
+    all_var_list.extend(str_var_list)
+    all_var_list.extend(num_var_list)
     print("function get_list_for_number_str_col finished!...................")
-    return str_var_list, num_var_list
+    return str_var_list, num_var_list, all_var_list
 
 
 def num_var_perf(p_df, p_var_list, p_target_var, p_path, p_truncation=False):
