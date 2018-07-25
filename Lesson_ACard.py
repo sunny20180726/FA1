@@ -40,11 +40,12 @@ if __name__ == '__main__':
     # 排除字段名
     drop_var = ['ListingInfo']
 
-    allData = pd.read_csv('allData_00.csv', header=0, encoding='gbk')
+    allData = pd.read_csv('allData_0.csv', header=0, encoding='gbk')
     # 时间窗口
-    timeWindows = u_explore.time_window_selection(p_df=allData, p_days_col="ListingGap",
-                                                  p_time_windows=range(30, 361, 30),
-                                                  p_save_file=path_explore_result+'\\timeWindows.png')
+    # allData = pd.read_csv('allData_00.csv', header=0, encoding='gbk')
+    # timeWindows = u_explore.time_window_selection(p_df=allData, p_days_col="ListingGap",
+    #                                               p_time_windows=range(30, 361, 30),
+    #                                               p_save_file=path_explore_result+'\\timeWindows.png')
     # 得到类别型和数字型变量名列表并保存
     string_var_list, number_var_list, all_var_list = u_explore.get_list_for_number_str_col(p_df=allData,
                                                                                            p_col_id=col_id,
@@ -58,6 +59,9 @@ if __name__ == '__main__':
     # string_var_list = txt2list(path_explore_result+"\\var_string_list.csv")
     # number_var_list = txt2list(path_explore_result+"\\var_number_list.csv")
     # all_var_list = txt2list(path_explore_result+"\\all_var_list.csv")
+    ####################################
+    # Step 3: 删除取值完全一样的数据；删除缺失过多的数据#
+    ####################################
     '''
     去掉取值完全一样的数据
     '''
@@ -79,32 +83,57 @@ if __name__ == '__main__':
                                                                                            p_col_id=col_id,
                                                                                            p_col_target=col_target,
                                                                                            p_drop_col=drop_var)
-    u_others.list2txt(path_explore_result, "var_string_list.csv", string_var_list)
-    u_others.list2txt(path_explore_result, "var_number_list.csv", number_var_list)
-    u_others.list2txt(path_explore_result, "all_var_list.csv", all_var_list)
 
     u_explore.missing_categorial(allData, string_var_list, path_explore_result+'\\missing_categorial.csv')
     u_explore.missing_continuous(allData, number_var_list, path_explore_result+'\\missing_num.csv')
 
-    allData_bk = allData.copy()
+    string_var_list, number_var_list, all_var_list = u_explore.get_list_for_number_str_col(p_df=allData,
+                                                                                           p_col_id=col_id,
+                                                                                           p_col_target=col_target,
+                                                                                           p_drop_col=drop_var)
+    u_others.list2txt(path_explore_result, "var_string_list.csv", string_var_list)
+    u_others.list2txt(path_explore_result, "var_number_list.csv", number_var_list)
+    u_others.list2txt(path_explore_result, "all_var_list.csv", all_var_list)
 
+    allData_bk = allData.copy()
     ####################################
     # Step 3: 缺失值填补#
     ####################################
     u_modify.makeup_num_miss(allData,number_var_list,"PERC50")
     u_explore.missing_continuous(allData,number_var_list,path_explore_result+'\\missing_num02.csv')
+    u_modify.makeup_str_miss(allData,string_var_list,"MODE")
+    u_explore.missing_categorial(allData, string_var_list, path_explore_result+'\\missing_categorial02.csv')
 
-    allData.to_csv('allData_1.csv', header=True,encoding='gbk', columns = allData.columns, index=False)
+    allData.to_csv('allData_1.csv', header=True,encoding='gbk', columns=allData.columns, index=False)
     ####################################
-    # Step 3: Group variables into bins#
+    # Step 3: 变量分组#
     ####################################
-    trainData = pd.read_csv('allData_1.csv',header = 0, encoding='gbk')
+    trainData = pd.read_csv('allData_1.csv', header=0, encoding='gbk')
+    string_var_list, number_var_list, all_var_list = u_explore.get_list_for_number_str_col(p_df=trainData,
+                                                                                           p_col_id=col_id,
+                                                                                           p_col_target=col_target,
+                                                                                           p_drop_col=drop_var)
     for col in string_var_list:
-        #for Chinese character, upper() is not valid
-        if col not in ['UserInfo_7','UserInfo_9','UserInfo_19','UserInfo_22','UserInfo_23','UserInfo_24','Education_Info3','Education_Info7','Education_Info8']:
-            trainData[col] = trainData[col].map(lambda x: str(x).upper())
+        trainData[col] = trainData[col].map(lambda x: str(x).upper())
 
+    deleted_features = []  # delete the categorical features in one of its single bin occupies more than 90%
+    encoded_features = {}
+    merged_features = {}
+    var_iv_list = {}  # save the IV values for binned features
+    var_woe_list = {}
+    u_modify.woe_iv_for_string(p_df=trainData, p_str_var_list=string_var_list, p_target=col_target,
+                               p_deleted_var_list=deleted_features, p_encoded_var_list=encoded_features,
+                               p_merged_var_list=merged_features, p_var_iv_list=var_iv_list,
+                               p_var_woe_list=var_woe_list)
+    string_var_list, number_var_list, all_var_list = u_explore.get_list_for_number_str_col(p_df=trainData,
+                                                                                           p_col_id=col_id,
+                                                                                           p_col_target=col_target,
+                                                                                           p_drop_col=drop_var)
 
+    var_cutoff_list = {}
+    u_modify.woe_iv_for_num(p_df=trainData, p_str_num_list=number_var_list, p_target=col_target,
+                            p_deleted_var_list=deleted_features, p_var_iv_list=var_iv_list,
+                            p_var_woe_list=var_woe_list, p_var_cutoff_list=var_cutoff_list)
 
 
 
